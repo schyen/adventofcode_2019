@@ -66,6 +66,7 @@ for w in wires:
     
     # drop origin
     del coord[0:2]
+    coord = set(coord)
     
     # panel is list of wires
     panel.append(coord) 
@@ -75,16 +76,14 @@ print(len(panel[1]))
 
 # nested loop because wires are different lengths
 keep = []
-for red in panel[0]:
-    
-    for blue in panel[1]:
-        
-        # find when wires intersect
-        wire_dist = distance.cityblock(red, blue)
-        if wire_dist == 0:
-            keep.append(red)
+for blue in panel[1]:
+    # find when wires intersect
+    check = blue in panel[0]
+    if check:
+        keep.append(blue)
 
-print(keep)
+# 
+print(len(keep))
 # calculate manhattan's distance of intersections to origin
 origin = (0,0)
 mdist = []
