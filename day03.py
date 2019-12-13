@@ -6,6 +6,7 @@ import re
 from scipy.spatial import distance
 import itertools
 from shapely.geometry import MultiLineString
+import collections
 
 # read in data
 wires = open("day03.txt", "r").readlines()
@@ -91,6 +92,7 @@ xpoint = []
 x_index = []
 
 for r_i, red in enumerate(panel[0]):
+
     for b_i, blue in enumerate(panel[1]):
         # find when wires intersect
         check = blue.intersects(red)
