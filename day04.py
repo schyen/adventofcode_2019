@@ -73,7 +73,9 @@ password = []
 for i in answer:
     int_as_list = [x for x in str(i)]
     tally = [(k, sum(1 for i in g)) for k,g in itertools.groupby(int_as_list)]
-    has_double = any([t[1] >= 2 for t in tally]) 
+    
+    has_double = any([t[1] >= 2 for t in tally]) # puzzle one
+    has_double = any([t[1] == 2 for t in tally]) # puzzle two
     if has_double:
         password.append(i)
 
