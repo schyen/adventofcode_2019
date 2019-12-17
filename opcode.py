@@ -21,12 +21,20 @@ def my_program(init_prog, noun=None, verb=None, verbose=False):
     # evaluate first opcode and parameters
     pos = 0
     output = []
-    iternum = 1
+    iternum = 0
     run = True
+    auto_pos = True
     # going through program at specified positions
     while run:
+
+        iternum += 1
         print("--------------------iter num: %d" % iternum)
+
+        # get position of next set of instructions
+        if auto_pos is True and iternum > 1:
+            pos = pos + step + 1
         print("pos: %d" % pos)
+
         # seperate out opcode from parameter
         instruction = [int(d) for d in str(prog[pos])]
 
@@ -44,11 +52,13 @@ def my_program(init_prog, noun=None, verb=None, verbose=False):
             print('program halted')
             run = False # halt program
             break
-            
-        ## if opcode 1 or 2, pad with leading 0 in mode for the 'write instructio'
-        if opcode in [1,2]:
-            mode_len = len(mode)
-            mode = list(itertools.repeat(0,  3-mode_len)) + mode  
+
+        mode_len = len(mode)
+        ##  pad with leading 0 for given opgodes
+        if opcode in [1,2,7,8]:
+            mode = list(itertools.repeat(0,  3-mode_len)) + mode
+        if opcode in [5,6]:
+            mode = list(itertools.repeat(0, 2-mode_len)) + mode
         ## for other opcodes, pad with one 0 if no modes detected
         elif len(mode) < 1:
             mode = [0] + mode
@@ -97,31 +107,58 @@ def my_program(init_prog, noun=None, verb=None, verbose=False):
             # record value
             par_val.append(curr_val)
 
+        # reset auto_pos
+        auto_pos = True
         # interperate opcode to determine output value and write position
         if opcode == 1:
             result = par_val[0] + par_val[1]
-            r_pos = par_tuple[2][1]
+            r_pos = par[2]
+            
         elif opcode == 2:
             result = par_val[0] * par_val[1]
-            r_pos = par_tuple[2][1]
+            r_pos = par[2]
+
         elif opcode == 3:
             result = int(input("Enter a number: "))
-            r_pos = par_tuple[0][1]
-        elif opcode == 4:
-            print('*******************************')
-            print('test result')
-           
-            result = prog[par_tuple[0][1]]
-            r_pos = 0
+            r_pos = par[0]
 
+        elif opcode == 4:
+            print('*************************************')
+            print('output')
+            #result = prog[par[0]]
+            result = par_val[0]
+            r_pos = 0
             output.append(result)
             print(result)
 
+        elif opcode == 5:
+            if par_val[0] != 0:
+                print('non-zero, setting pointer to %d' % par_val[1])
+                pos = par_val[1]
+                auto_pos = False
+            else: continue
+
+        elif opcode == 6:
+            if par_val[0] == 0:
+                pos = par_val[1]
+                auto_pos = False
+            else: continue
+            
+        elif opcode == 7:
+            if par_val[0] < par_val[1]: result = 1
+            else: result = 0
+            r_pos = par[2]
+
+        elif opcode == 8:
+            if par_val[0] == par_val[1]: result = 1
+            else: result = 0
+            r_pos = par[2]
         else:
             print('unknown opcode')
             result = np.nan
             continue
-                # verbose
+
+        # verbose
         if verbose:
             print("param value:", end = " ")
             print(par_val)
@@ -130,10 +167,9 @@ def my_program(init_prog, noun=None, verb=None, verbose=False):
 
         # write result to position or return a result
         if r_pos is not None:
-            prog[r_pos] = result
+            prog[r_pos] = result        
 
-        # get position of next set of instructions
-        pos = pos + step + 1
-        
-        iternum += 1
+        if result in [999, 1000, 1001]:
+            print('comparison complete')
+            break
     return prog, iternum, output
