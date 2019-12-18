@@ -1,47 +1,87 @@
 # opcode for advent of code 2019
 # init_prog is a list of numbers
 
+import sys
+import itertools
+
 # noun, verb, and final value for address 0 are specified in param
-def my_program(init_prog, noun=12, verb=2, verbose=False):
+def my_program(init_prog, noun=None, verb=None, verbose=False):
     
     # first copy over initial prog
     prog = init_prog
-    
-    # changing elements 1 and 2
-    index = [1, 2]
-    replacement = [noun, verb]
-    for (i, r) in zip(index, replacement):
-        prog[i] = r
+
+    if noun != None and verb != None:
+        
+        # changing elements 1 and 2
+        index = [1, 2]
+        replacement = [noun, verb]
+        for (i, r) in zip(index, replacement):
+            prog[i] = r
 
     # evaluate first opcode and parameters
     pos = 0
-
-    run = TRUE
+    output = []
+    iternum = 0
+    run = True
+    auto_pos = True
     # going through program at specified positions
     while run:
 
+        iternum += 1
+        print("--------------------iter num: %d" % iternum)
+
+        # get position of next set of instructions
+        if auto_pos is True and iternum > 1:
+            pos = pos + step + 1
+        print("pos: %d" % pos)
+
         # seperate out opcode from parameter
-        instruction = [int(d) for d in map(str, prog[pos])]
+        instruction = [int(d) for d in str(prog[pos])]
 
         ## opcode always last  2 digits
         opcode = instruction[-2:]
+        
         ## mode are all digits prior to opcode
-        mode = instruction[:(len(instruction)-len(opcode)+1)]
-        ## if opcode 1 or 2, pad with leading 0 in mode for the 'write instruction'
-        if opcode in [1,2]:
-            mode = [0] + mode
-            
-        # run through program sequence by the number of parameters
-        step = len(opcode) + len(mode)
+        mode = instruction[:(len(instruction)-len(opcode))]
 
         # convert opcode to integer
         opcode = int(''.join(map(str, opcode)))
+
+        # check for halt program
+        if opcode == 99:
+            print('program halted')
+            run = False # halt program
+            break
+
+        mode_len = len(mode)
+        ##  pad with leading 0 for given opgodes
+        if opcode in [1,2,7,8]:
+            mode = list(itertools.repeat(0,  3-mode_len)) + mode
+        if opcode in [5,6]:
+            mode = list(itertools.repeat(0, 2-mode_len)) + mode
+        ## for other opcodes, pad with one 0 if no modes detected
+        elif len(mode) < 1:
+            mode = [0] + mode
+
+        # mode is in reverse order
+        mode = list(reversed(mode))
         
+        # run through program sequence by the number of parameters
+        step = len(mode)
+ 
         # extract parameters positions
         par_pos = [i+pos+1 for i,x in enumerate(mode)]
 
         # reading parameters
         par = [prog[i] for i in par_pos]
+        if verbose:
+            print("instruction:", end = " ")
+            print(instruction)
+            print("opcode: %d" % opcode)
+            print("param:", end=" ")
+            print(par)
+            print("param mode:", end = " ")
+            print(mode)
         
         # put paramter and mode together as tuple
         par_tuple = []
@@ -59,7 +99,7 @@ def my_program(init_prog, noun=12, verb=2, verbose=False):
             # position mode
             if curr_mode == 0:
                 # positions of value based on parameter
-                curr_val = int(prog[curr_par])
+                curr_val = prog[curr_par]
             elif curr_mode == 1:
                 # value is the parameter
                 curr_val = curr_par
@@ -67,36 +107,69 @@ def my_program(init_prog, noun=12, verb=2, verbose=False):
             # record value
             par_val.append(curr_val)
 
+        # reset auto_pos
+        auto_pos = True
         # interperate opcode to determine output value and write position
-        if opcode == 99:
-            run = False # halt program
-        elif opcode == 1:
+        if opcode == 1:
             result = par_val[0] + par_val[1]
-            r_pos = par_val[2]
+            r_pos = par[2]
+            
         elif opcode == 2:
             result = par_val[0] * par_val[1]
-            r_pos = par_val[2]
+            r_pos = par[2]
+
         elif opcode == 3:
-            result = result # result is same result as prev itereration
-            r_pos = par_val[0]
+            result = int(input("Enter a number: "))
+            r_pos = par[0]
+
         elif opcode == 4:
+            print('*************************************')
+            print('output')
+            #result = prog[par[0]]
             result = par_val[0]
-            r_pos = par_val[0]
+            r_pos = 0
+            output.append(result)
+            print(result)
+
+        elif opcode == 5:
+            if par_val[0] != 0:
+                print('non-zero, setting pointer to %d' % par_val[1])
+                pos = par_val[1]
+                auto_pos = False
+            else: continue
+
+        elif opcode == 6:
+            if par_val[0] == 0:
+                pos = par_val[1]
+                auto_pos = False
+            else: continue
             
+        elif opcode == 7:
+            if par_val[0] < par_val[1]: result = 1
+            else: result = 0
+            r_pos = par[2]
+
+        elif opcode == 8:
+            if par_val[0] == par_val[1]: result = 1
+            else: result = 0
+            r_pos = par[2]
         else:
             print('unknown opcode')
             result = np.nan
             continue
 
-        # write result to position
-        prog[r_pos] = result
-        
         # verbose
-        verb_rowname = ['prog','x','y','result']
-        verb_colname = ['position','value']
-        mat = np.reshape((pos, x_pos, y_pos, r_pos, opcode, x, y, result), (2,4))
-        check = pd.DataFrame(mat, verb_colname, verb_rowname)
         if verbose:
-            print(check)
-    
-    return prog, noun, verb
+            print("param value:", end = " ")
+            print(par_val)
+            print("result: %d" % result)
+            print("r_pos: %d" % r_pos)
+
+        # write result to position or return a result
+        if r_pos is not None:
+            prog[r_pos] = result        
+
+        if result in [999, 1000, 1001]:
+            print('comparison complete')
+            break
+    return prog, iternum, output
